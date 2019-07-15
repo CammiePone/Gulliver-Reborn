@@ -1,18 +1,24 @@
 package com.camellias.gulliverreborn;
 
+import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.monster.EntitySpider;
+import net.minecraft.entity.passive.EntityOcelot;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.EntityDamageSource;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.living.LivingEvent.LivingJumpEvent;
+import net.minecraftforge.event.entity.living.LivingEvent.LivingUpdateEvent;
 import net.minecraftforge.event.entity.living.LivingFallEvent;
+import net.minecraftforge.event.entity.living.LivingSetAttackTargetEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent.BreakSpeed;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteract;
 import net.minecraftforge.fml.common.Mod;
@@ -32,10 +38,14 @@ public class GulliverReborn
 {
 	public static final String MODID = "gulliverreborn";
 	public static final String NAME = "Gulliver Reborn";
-	public static final String VERSION = "1.0";
+	public static final String VERSION = "1.1";
 	public static final String MCVERSION = "1.12.2";
-	public static final String DEPENDENCIES = "required-after:forge@[14.23.5.2795,];" + "required-after:artemislib@[1.0.0,];";
-	public static final DamageSource CRUSHING = new DamageSource(MODID + ".crushing");
+	public static final String DEPENDENCIES = "required-after:forge@[14.23.5.2795,];" + "required-after:artemislib@[1.0.6,];";
+	
+	public static DamageSource causeCrushingDamage(EntityLivingBase entity)
+	{
+		return new EntityDamageSource(MODID + ".crushing", entity);
+	}
 	
 	@EventHandler
 	public void preInit(FMLPreInitializationEvent event)
@@ -58,6 +68,42 @@ public class GulliverReborn
 			EntityPlayer player = (EntityPlayer) event.getEntityLiving();
 			
 			event.setDistance(event.getDistance() / (player.height * 0.6F));
+		}
+	}
+	
+	@SubscribeEvent
+	public void onLivingTick(LivingUpdateEvent event)
+	{
+		EntityLivingBase entity = event.getEntityLiving();
+		World world = event.getEntityLiving().world;
+		
+		for(EntityLivingBase entities : world.getEntitiesWithinAABB(EntityLivingBase.class, entity.getEntityBoundingBox()))
+		{
+			if(!entity.isSneaking())
+			{
+				if(entity.height / entities.height >= 4)
+				{
+					entities.attackEntityFrom(causeCrushingDamage(entity), entity.height - entities.height);
+				}
+			}
+		}
+	}
+	
+	@SubscribeEvent
+	public void onTargetEntity(LivingSetAttackTargetEvent event)
+	{
+		if(event.getTarget() instanceof EntityPlayer && event.getEntityLiving() instanceof EntityLiving)
+		{
+			EntityPlayer player = (EntityPlayer) event.getTarget();
+			EntityLiving entity = (EntityLiving) event.getEntityLiving();
+			
+			if(!(entity instanceof EntitySpider || entity instanceof EntityOcelot))
+			{
+				if(player.height <= 0.45F)
+				{
+					entity.setAttackTarget(null);
+				}
+			}
 		}
 	}
 	
@@ -97,40 +143,36 @@ public class GulliverReborn
 					if(!player.onGround)
 					{
 						player.jumpMovementFactor *= 1.75F;
+						player.fallDistance = 0;
 						
 						if(player.motionY < 0D)
 						{
 							player.motionY *= 0.6D;
 						}
 						
-						for(double blockY = player.posY; 
+						if(player.isSneaking())
+						{
+							player.jumpMovementFactor *= 3.50F;
+						}
+						
+						for(double blockY = player.posY; !player.isSneaking() &&
 								((world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.AIR) ||
-								(world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.LAVA)||
-								(world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.FIRE)||
-								(world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.LIT_FURNACE)) &&
-								player.posY - blockY < 25; 
+								(world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.LAVA) ||
+								(world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.FIRE) ||
+								(world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.LIT_FURNACE) ||
+								(world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.MAGMA)) &&
+								player.posY - blockY < 25;
 								blockY--)
 						{
 							if((world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.LAVA)||
 									(world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.FIRE)||
-									(world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.LIT_FURNACE))
+									(world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.LIT_FURNACE) ||
+									(world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.MAGMA))
 							{
-								player.motionY += MathHelper.clamp(0.1D, Double.MIN_VALUE, 0.1D);
-								player.fallDistance = 0;
+								player.motionY += MathHelper.clamp(0.07D, Double.MIN_VALUE, 0.1D);
 							}
 						}
 					}
-				}
-			}
-		}
-		
-		for(EntityLivingBase entities : world.getEntitiesWithinAABB(EntityLivingBase.class, player.getEntityBoundingBox()))
-		{
-			if(!player.isSneaking())
-			{
-				if(player.height / entities.height >= 4)
-				{
-					entities.attackEntityFrom(CRUSHING, player.height - entities.height);
 				}
 			}
 		}
