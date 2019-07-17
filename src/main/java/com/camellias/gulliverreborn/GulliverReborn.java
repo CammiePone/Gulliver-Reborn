@@ -50,7 +50,6 @@ import net.minecraft.world.World;
 import net.minecraftforge.client.event.EntityViewRenderEvent.CameraSetup;
 import net.minecraftforge.client.event.FOVUpdateEvent;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.EntityMountEvent;
 import net.minecraftforge.event.entity.living.LivingEvent.LivingJumpEvent;
 import net.minecraftforge.event.entity.living.LivingEvent.LivingUpdateEvent;
 import net.minecraftforge.event.entity.living.LivingFallEvent;
@@ -308,6 +307,17 @@ public class GulliverReborn
 			{
 				target.startRiding(player);
 			}
+			
+			if(player.getHeldItemMainhand().isEmpty() && player.isBeingRidden() && player.isSneaking())
+			{
+				for(Entity entities : player.getPassengers())
+				{
+					if(entities instanceof EntityLivingBase)
+					{
+						entities.dismountRidingEntity();
+					}
+				}
+			}
 		}
 	}
 	
@@ -340,11 +350,6 @@ public class GulliverReborn
 			{
 				if(player.height < 1.8F) player.motionY = 0.42F;
 			}
-			
-			for(Entity riders : player.getPassengers())
-			{
-				riders.dismountRidingEntity();
-			}
 		}
 	}
 	
@@ -354,18 +359,6 @@ public class GulliverReborn
 		EntityPlayer player = event.getEntityPlayer();
 		
 		event.setNewSpeed(event.getOriginalSpeed() * (player.height / 1.8F));
-	}
-	
-	@SubscribeEvent
-	public void onMount(EntityMountEvent event)
-	{
-		if(event.isMounting() && event.getEntityBeingMounted() instanceof EntityLivingBase && event.getEntityMounting() instanceof EntityPlayer)
-		{
-			EntityPlayer player = (EntityPlayer) event.getEntityMounting();
-			EntityLivingBase entity = (EntityLivingBase) event.getEntityBeingMounted();
-			
-			player.setPosition(entity.posX, entity.posY, entity.posZ);
-		}
 	}
 	
 	@SubscribeEvent
