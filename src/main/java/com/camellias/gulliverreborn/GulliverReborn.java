@@ -62,6 +62,8 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 @Mod(
 modid = GulliverReborn.MODID,
@@ -73,7 +75,7 @@ public class GulliverReborn
 {
 	public static final String MODID = "gulliverreborn";
 	public static final String NAME = "Gulliver Reborn";
-	public static final String VERSION = "1.3";
+	public static final String VERSION = "1.4";
 	public static final String MCVERSION = "1.12.2";
 	public static final String DEPENDENCIES = "required-after:forge@[14.23.5.2795,];" + "required-after:artemislib@[1.0.6,];";
 	public static final Logger LOGGER = LogManager.getLogger(NAME);
@@ -362,6 +364,7 @@ public class GulliverReborn
 	}
 	
 	@SubscribeEvent
+	@SideOnly(Side.CLIENT)
 	public void onCameraSetup(CameraSetup event)
 	{
 		EntityPlayer player = Minecraft.getMinecraft().player;
