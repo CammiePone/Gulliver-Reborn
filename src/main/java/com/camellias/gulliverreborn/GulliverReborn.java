@@ -6,6 +6,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 
+import com.artemis.artemislib.compatibilities.sizeCap.ISizeCap;
+import com.artemis.artemislib.compatibilities.sizeCap.SizeCapPro;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockBush;
 import net.minecraft.block.BlockCarpet;
@@ -28,6 +31,7 @@ import net.minecraft.block.BlockSoulSand;
 import net.minecraft.block.BlockWeb;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
@@ -49,6 +53,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.client.event.EntityViewRenderEvent.CameraSetup;
 import net.minecraftforge.client.event.FOVUpdateEvent;
+import net.minecraftforge.client.event.RenderLivingEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.living.LivingEvent.LivingJumpEvent;
 import net.minecraftforge.event.entity.living.LivingEvent.LivingUpdateEvent;
@@ -75,7 +80,7 @@ public class GulliverReborn
 {
 	public static final String MODID = "gulliverreborn";
 	public static final String NAME = "Gulliver Reborn";
-	public static final String VERSION = "1.4";
+	public static final String VERSION = "1.5";
 	public static final String MCVERSION = "1.12.2";
 	public static final String DEPENDENCIES = "required-after:forge@[14.23.5.2795,];" + "required-after:artemislib@[1.0.6,];";
 	public static final Logger LOGGER = LogManager.getLogger(NAME);
@@ -101,9 +106,9 @@ public class GulliverReborn
 	}
 	
 	@SubscribeEvent
-	public void onPlayerDamaged(LivingFallEvent event)
+	public void onPlayerFall(LivingFallEvent event)
 	{
-		if(event.getEntityLiving() instanceof EntityPlayer)
+		if(event.getEntityLiving() instanceof EntityPlayer && Config.SCALED_FALL_DAMAGE)
 		{
 			EntityPlayer player = (EntityPlayer) event.getEntityLiving();
 			
@@ -119,7 +124,7 @@ public class GulliverReborn
 		
 		for(EntityLivingBase entities : world.getEntitiesWithinAABB(EntityLivingBase.class, entity.getEntityBoundingBox()))
 		{
-			if(!entity.isSneaking())
+			if(!entity.isSneaking() && Config.GIANTS_CRUSH_ENTITIES)
 			{
 				if(entity.height / entities.height >= 4)
 				{
@@ -132,7 +137,7 @@ public class GulliverReborn
 	@SubscribeEvent
 	public void onTargetEntity(LivingSetAttackTargetEvent event)
 	{
-		if(event.getTarget() instanceof EntityPlayer && event.getEntityLiving() instanceof EntityLiving)
+		if(event.getTarget() instanceof EntityPlayer && event.getEntityLiving() instanceof EntityLiving && Config.SMALL_IS_INVISIBLE_TO_NONCATS_OR_NONSPIDERS)
 		{
 			EntityPlayer player = (EntityPlayer) event.getTarget();
 			EntityLiving entity = (EntityLiving) event.getEntityLiving();
@@ -170,12 +175,15 @@ public class GulliverReborn
 			Block block = state.getBlock();
 			float ratio = (player.height / 1.8F) / 2;
 			
-			if(block instanceof BlockRedFlower || state == Blocks.DOUBLE_PLANT.getDefaultState().withProperty(BlockDoublePlant.VARIANT, BlockDoublePlant.EnumPlantType.ROSE))
+			if(block instanceof BlockRedFlower
+				|| state == Blocks.DOUBLE_PLANT.getDefaultState().withProperty(BlockDoublePlant.VARIANT, BlockDoublePlant.EnumPlantType.ROSE)
+				&& Config.ROSES_HURT)
 			{
 				player.attackEntityFrom(DamageSource.CACTUS, 1);
 			}
 			
 			if(!player.capabilities.isFlying
+				&& Config.PLANTS_SLOW_SMALL_DOWN
 				&& (block instanceof BlockBush)
 				|| (block instanceof BlockCarpet)
 				|| (block instanceof BlockFlower)
@@ -199,6 +207,7 @@ public class GulliverReborn
 			boolean canPass = block.isPassable(world, pos.offset(facing));
 			
 			if(ClimbingHandler.canClimb(player, facing)
+				&& Config.CLIMB_SOME_BLOCKS
 				&& (block instanceof BlockDirt)
 				|| (block instanceof BlockGrass)
 				|| (block instanceof BlockMycelium)
@@ -227,7 +236,7 @@ public class GulliverReborn
 			
 			for(ItemStack stack : player.getHeldEquipment())
 			{
-				if(stack.getItem() == Items.SLIME_BALL || stack.getItem() == Item.getItemFromBlock(Blocks.SLIME_BLOCK))
+				if(stack.getItem() == Items.SLIME_BALL || stack.getItem() == Item.getItemFromBlock(Blocks.SLIME_BLOCK) && Config.CLIMB_WITH_SLIME)
 				{
 					if(ClimbingHandler.canClimb(player, facing))
 					{
@@ -246,7 +255,7 @@ public class GulliverReborn
 					}
 				}
 				
-				if(stack.getItem() == Items.PAPER)
+				if(stack.getItem() == Items.PAPER && Config.GLIDE_WITH_PAPER)
 				{
 					if(!player.onGround)
 					{
@@ -272,10 +281,11 @@ public class GulliverReborn
 								player.posY - blockY < 25;
 								blockY--)
 						{
-							if((world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.LAVA)||
-									(world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.FIRE)||
+							if((world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.LAVA) ||
+									(world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.FIRE) ||
 									(world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.LIT_FURNACE) ||
-									(world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.MAGMA))
+									(world.getBlockState(new BlockPos(player.posX, blockY, player.posZ)).getBlock() == Blocks.MAGMA) &&
+									Config.HOT_BLOCKS_GIVE_LIFT)
 							{
 								player.motionY += MathHelper.clamp(0.07D, Double.MIN_VALUE, 0.1D);
 							}
@@ -294,7 +304,7 @@ public class GulliverReborn
 			EntityLivingBase target = (EntityLivingBase) event.getTarget();
 			EntityPlayer player = event.getEntityPlayer();
 			
-			if(target.height / 2 >= player.height)
+			if(target.height / 2 >= player.height && Config.RIDE_BIG_ENTITIES)
 			{
 				for(ItemStack stack : player.getHeldEquipment())
 				{
@@ -305,7 +315,7 @@ public class GulliverReborn
 				}
 			}
 			
-			if(target.height * 2 <= player.height)
+			if(target.height * 2 <= player.height && Config.PICKUP_SMALL_ENTITIES)
 			{
 				target.startRiding(player);
 			}
@@ -340,7 +350,7 @@ public class GulliverReborn
 	@SubscribeEvent
 	public void onEntityJump(LivingJumpEvent event)
 	{
-		if(event.getEntityLiving() instanceof EntityPlayer)
+		if(event.getEntityLiving() instanceof EntityPlayer && Config.JUMP_MODIFIER)
 		{
 			EntityPlayer player = (EntityPlayer) event.getEntityLiving();
 			float jumpHeight = (player.height / 1.8F);
@@ -360,7 +370,7 @@ public class GulliverReborn
 	{
 		EntityPlayer player = event.getEntityPlayer();
 		
-		event.setNewSpeed(event.getOriginalSpeed() * (player.height / 1.8F));
+		if(Config.HARVEST_MODIFIER) event.setNewSpeed(event.getOriginalSpeed() * (player.height / 1.8F));
 	}
 	
 	@SubscribeEvent
@@ -378,6 +388,52 @@ public class GulliverReborn
 		if(Minecraft.getMinecraft().gameSettings.thirdPersonView == 2)
 		{
 			if(player.height > 1.8F) GL11.glTranslatef(0, 0, scale * 2);
+		}
+	}
+	
+	@SubscribeEvent
+	@SideOnly(Side.CLIENT)
+	public void onEntityRenderPre(RenderLivingEvent.Pre event)
+	{
+		if(Config.DO_ADJUSTED_RENDER)
+		{
+			final EntityLivingBase entity = event.getEntity();
+			
+			if(entity.hasCapability(SizeCapPro.sizeCapability, null))
+			{
+				final ISizeCap cap = entity.getCapability(SizeCapPro.sizeCapability, null);
+				
+				if(cap.getTrans() == true)
+				{
+					float scale = entity.height / cap.getDefaultHeight();
+					
+					if(scale < 0.4F)
+					{
+						GlStateManager.pushMatrix();
+						GlStateManager.scale(scale * 2.5, 1, scale * 2.5);
+					}
+				}
+			}
+		}
+	}
+	
+	@SubscribeEvent
+	@SideOnly(Side.CLIENT)
+	public void onLivingRenderPost(RenderLivingEvent.Post event)
+	{
+		if(Config.DO_ADJUSTED_RENDER)
+		{
+			final EntityLivingBase entity = event.getEntity();
+			
+			if(entity.hasCapability(SizeCapPro.sizeCapability, null))
+			{
+				final ISizeCap cap = entity.getCapability(SizeCapPro.sizeCapability, null);
+				
+				if(cap.getTrans() == true)
+				{
+					GlStateManager.popMatrix();
+				}
+			}
 		}
 	}
 }

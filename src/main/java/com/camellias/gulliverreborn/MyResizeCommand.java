@@ -75,14 +75,13 @@ public class MyResizeCommand extends CommandBase
 		
 		if(sender instanceof EntityPlayer)
 		{
-			size = MathHelper.clamp(size, 0.25F, Config.MAX_SIZE);
+			size = MathHelper.clamp(size, 0.125F, Config.MAX_SIZE);
 			Multimap<String, AttributeModifier> attributes = HashMultimap.create();
 			Multimap<String, AttributeModifier> removeableAttributes = HashMultimap.create();
 			Multimap<String, AttributeModifier> removeableAttributes2 = HashMultimap.create();
 			
 			attributes.put(ArtemisLibAttributes.ENTITY_HEIGHT.getName(), new AttributeModifier(uuidHeight, "Player Height", size - 1, 2));
-			if(Config.SMALL_IS_CHONK) attributes.put(ArtemisLibAttributes.ENTITY_WIDTH.getName(), new AttributeModifier(uuidWidth, "Player Width", MathHelper.clamp(size - 1, 0.4 - 1, Config.MAX_SIZE), 2));
-			if(!Config.SMALL_IS_CHONK) attributes.put(ArtemisLibAttributes.ENTITY_WIDTH.getName(), new AttributeModifier(uuidWidth, "Player Width", size - 1, 2));
+			attributes.put(ArtemisLibAttributes.ENTITY_WIDTH.getName(), new AttributeModifier(uuidWidth, "Player Width", MathHelper.clamp(size - 1, 0.4 - 1, Config.MAX_SIZE), 2));
 			
 			if(Config.SPEED_MODIFIER) attributes.put(SharedMonsterAttributes.MOVEMENT_SPEED.getName(), new AttributeModifier(uuidSpeed, "Player Speed", (size - 1) / 2, 2));
 			if(Config.REACH_MODIFIER) removeableAttributes.put(EntityPlayer.REACH_DISTANCE.getName(), new AttributeModifier(uuidReach1, "Player Reach 1", size - 1, 2));
