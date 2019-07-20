@@ -80,7 +80,7 @@ public class GulliverReborn
 {
 	public static final String MODID = "gulliverreborn";
 	public static final String NAME = "Gulliver Reborn";
-	public static final String VERSION = "1.5";
+	public static final String VERSION = "1.6";
 	public static final String MCVERSION = "1.12.2";
 	public static final String DEPENDENCIES = "required-after:forge@[14.23.5.2795,];" + "required-after:artemislib@[1.0.6,];";
 	public static final Logger LOGGER = LogManager.getLogger(NAME);
@@ -108,11 +108,12 @@ public class GulliverReborn
 	@SubscribeEvent
 	public void onPlayerFall(LivingFallEvent event)
 	{
-		if(event.getEntityLiving() instanceof EntityPlayer && Config.SCALED_FALL_DAMAGE)
+		if(event.getEntityLiving() instanceof EntityPlayer)
 		{
 			EntityPlayer player = (EntityPlayer) event.getEntityLiving();
 			
-			event.setDistance(event.getDistance() / (player.height * 0.6F));
+			if(Config.SCALED_FALL_DAMAGE) event.setDistance(event.getDistance() / (player.height * 0.6F));
+			if(player.height < 0.45F) event.setDistance(0);
 		}
 	}
 	
