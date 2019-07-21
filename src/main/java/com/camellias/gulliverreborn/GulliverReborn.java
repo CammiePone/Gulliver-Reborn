@@ -80,7 +80,7 @@ public class GulliverReborn
 {
 	public static final String MODID = "gulliverreborn";
 	public static final String NAME = "Gulliver Reborn";
-	public static final String VERSION = "1.6";
+	public static final String VERSION = "1.7";
 	public static final String MCVERSION = "1.12.2";
 	public static final String DEPENDENCIES = "required-after:forge@[14.23.5.2795,];" + "required-after:artemislib@[1.0.6,];";
 	public static final Logger LOGGER = LogManager.getLogger(NAME);
@@ -127,7 +127,7 @@ public class GulliverReborn
 		{
 			if(!entity.isSneaking() && Config.GIANTS_CRUSH_ENTITIES)
 			{
-				if(entity.height / entities.height >= 4)
+				if(entity.height / entities.height >= 4 && !(entity.getRidingEntity() == entities))
 				{
 					entities.attackEntityFrom(causeCrushingDamage(entity), entity.height - entities.height);
 				}
