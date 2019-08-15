@@ -40,13 +40,19 @@ public class MyResizeCommand extends CommandBase
 	@Override
 	public String getUsage(ICommandSender sender)
 	{
-		return "mysize <id>";
+		return "gulliverreborn.commands.mysize.usage";
 	}
 	
 	@Override
 	public List<String> getAliases()
 	{
 		return aliases;
+	}
+	
+	@Override
+	public boolean checkPermission(MinecraftServer server, ICommandSender sender)
+	{
+		return true;
 	}
 	
 	@Override
@@ -108,7 +114,6 @@ public class MyResizeCommand extends CommandBase
 			}
 			
 			((EntityPlayer) sender).getAttributeMap().applyAttributeModifiers(attributes);
-			
 			((EntityPlayer) sender).setHealth(((EntityPlayer) sender).getMaxHealth());
 			
 			if(sender instanceof EntityPlayer) GulliverReborn.LOGGER.info(((EntityPlayer) sender).getDisplayNameString() + " set their size to " + size);

@@ -1,6 +1,7 @@
 package com.camellias.gulliverreborn;
 
 import java.io.File;
+import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,8 +49,10 @@ import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.EntityDamageSource;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraftforge.client.event.EntityViewRenderEvent.CameraSetup;
 import net.minecraftforge.client.event.FOVUpdateEvent;
@@ -60,6 +63,7 @@ import net.minecraftforge.event.entity.living.LivingEvent.LivingUpdateEvent;
 import net.minecraftforge.event.entity.living.LivingFallEvent;
 import net.minecraftforge.event.entity.living.LivingSetAttackTargetEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent.BreakSpeed;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteract;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
@@ -80,7 +84,7 @@ public class GulliverReborn
 {
 	public static final String MODID = "gulliverreborn";
 	public static final String NAME = "Gulliver Reborn";
-	public static final String VERSION = "1.8";
+	public static final String VERSION = "1.9";
 	public static final String MCVERSION = "1.12.2";
 	public static final String DEPENDENCIES = "required-after:forge@[14.23.5.2795,];" + "required-after:artemislib@[1.0.6,];";
 	public static final Logger LOGGER = LogManager.getLogger(NAME);
@@ -150,13 +154,6 @@ public class GulliverReborn
 					entity.setAttackTarget(null);
 				}
 			}
-			else
-			{
-				if(player.height <= 0.45F)
-				{
-					entity.setAttackTarget(player);
-				}
-			}
 		}
 	}
 	
@@ -221,14 +218,14 @@ public class GulliverReborn
 				|| (block instanceof BlockGravel)
 				|| (block instanceof BlockClay))
 			{
-				if (player.collidedHorizontally)
+				if(player.collidedHorizontally)
 				{
-					if (!player.isSneaking())
+					if(!player.isSneaking())
 					{
 						player.motionY = 0.1D;
 					}
 					
-					if (player.isSneaking())
+					if(player.isSneaking())
 					{
 						player.motionY = 0.0D;
 					}
@@ -241,14 +238,14 @@ public class GulliverReborn
 				{
 					if(ClimbingHandler.canClimb(player, facing))
 					{
-						if (player.collidedHorizontally)
+						if(player.collidedHorizontally)
 						{
-							if (!player.isSneaking())
+							if(!player.isSneaking())
 							{
 								player.motionY = 0.1D;
 							}
 							
-							if (player.isSneaking())
+							if(player.isSneaking())
 							{
 								player.motionY = 0.0D;
 							}
@@ -335,20 +332,6 @@ public class GulliverReborn
 	}
 	
 	@SubscribeEvent
-	public void onFOVChange(FOVUpdateEvent event)
-	{
-		if(event.getEntity() != null)
-		{
-			EntityPlayer player = event.getEntity();
-			GameSettings settings = Minecraft.getMinecraft().gameSettings;
-			PotionEffect speed = player.getActivePotionEffect(MobEffects.SPEED);
-			float fov = settings.fovSetting / settings.fovSetting;
-			
-			event.setNewfov(speed != null ? fov + (10 * (speed.getAmplifier() + 1)) : fov);
-		}
-	}
-	
-	@SubscribeEvent
 	public void onEntityJump(LivingJumpEvent event)
 	{
 		if(event.getEntityLiving() instanceof EntityPlayer && Config.JUMP_MODIFIER)
@@ -372,6 +355,28 @@ public class GulliverReborn
 		EntityPlayer player = event.getEntityPlayer();
 		
 		if(Config.HARVEST_MODIFIER) event.setNewSpeed(event.getOriginalSpeed() * (player.height / 1.8F));
+	}
+	
+	@SubscribeEvent
+	@SideOnly(Side.CLIENT)
+	public void onFOVChange(FOVUpdateEvent event)
+	{
+		if(event.getEntity() != null)
+		{
+			EntityPlayer player = event.getEntity();
+			GameSettings settings = Minecraft.getMinecraft().gameSettings;
+			PotionEffect speed = player.getActivePotionEffect(MobEffects.SPEED);
+			float fov = settings.fovSetting / settings.fovSetting;
+			
+			if(player.isSprinting())
+			{
+				event.setNewfov(speed != null ? fov + ((0.1F * (speed.getAmplifier() + 1)) + 0.15F) : fov + 0.1F);
+			}
+			else
+			{
+				event.setNewfov(speed != null ? fov + (0.1F * (speed.getAmplifier() + 1)) : fov);
+			}
+		}
 	}
 	
 	@SubscribeEvent
@@ -406,12 +411,14 @@ public class GulliverReborn
 				
 				if(cap.getTrans() == true)
 				{
-					float scale = entity.height / cap.getDefaultHeight();
+					float scale = (entity.height / cap.getDefaultHeight()) * 2.5F;
 					
 					if(scale < 0.4F)
 					{
 						GlStateManager.pushMatrix();
-						GlStateManager.scale(scale * 2.5, 1, scale * 2.5);
+						GlStateManager.scale(scale, 1, scale);
+						GlStateManager.translate(event.getX() / scale - event.getX(),
+								event.getY() / scale - event.getY(), event.getZ() / scale - event.getZ());
 					}
 				}
 			}
