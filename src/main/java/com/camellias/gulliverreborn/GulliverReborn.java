@@ -84,7 +84,7 @@ public class GulliverReborn
 {
 	public static final String MODID = "gulliverreborn";
 	public static final String NAME = "Gulliver Reborn";
-	public static final String VERSION = "1.9";
+	public static final String VERSION = "1.10";
 	public static final String MCVERSION = "1.12.2";
 	public static final String DEPENDENCIES = "required-after:forge@[14.23.5.2795,];" + "required-after:artemislib@[1.0.6,];";
 	public static final Logger LOGGER = LogManager.getLogger(NAME);
@@ -131,7 +131,7 @@ public class GulliverReborn
 		{
 			if(!entity.isSneaking() && Config.GIANTS_CRUSH_ENTITIES)
 			{
-				if(entity.height / entities.height >= 4 && !(entity.getRidingEntity() == entities))
+				if(entity.height / entities.height >= 4 && entities.getRidingEntity() != entity)
 				{
 					entities.attackEntityFrom(causeCrushingDamage(entity), entity.height - entities.height);
 				}
@@ -411,14 +411,14 @@ public class GulliverReborn
 				
 				if(cap.getTrans() == true)
 				{
-					float scale = (entity.height / cap.getDefaultHeight()) * 2.5F;
+					float scale = entity.height / cap.getDefaultHeight();
 					
 					if(scale < 0.4F)
 					{
 						GlStateManager.pushMatrix();
-						GlStateManager.scale(scale, 1, scale);
-						GlStateManager.translate(event.getX() / scale - event.getX(),
-								event.getY() / scale - event.getY(), event.getZ() / scale - event.getZ());
+						GlStateManager.scale(scale * 2.5F, 1, scale * 2.5F);
+						GlStateManager.translate(event.getX() / scale * 2.5F - event.getX(),
+								event.getY() / scale * 2.5F - event.getY(), event.getZ() / scale * 2.5F - event.getZ());
 					}
 				}
 			}
